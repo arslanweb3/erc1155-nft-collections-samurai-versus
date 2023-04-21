@@ -52,5 +52,7 @@ contract RoyaltyBalancerTest is Test {
         assertEq(royaltyBalancer.pendingReward(minter1), 1.5 ether);
         assertEq(royaltyBalancer.pendingReward(minter2), 0.5 ether);
         assertEq(royaltyBalancer.pendingReward(minter3), 0);
+
+        // TODO test claimReward    
     }
 }
