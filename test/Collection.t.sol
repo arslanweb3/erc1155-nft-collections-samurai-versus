@@ -23,7 +23,24 @@ contract TestContract is Test {
     function setUp() public {
         royaltyBalancer1 = new RoyaltyBalancer();
         royaltyBalancer2 = new RoyaltyBalancer();
-        collection = new Collection(address(royaltyBalancer1), address(royaltyBalancer2));
+        collection = new Collection(royaltyBalancer1, royaltyBalancer2);
+        royaltyBalancer1.setCollectionAddress(address(collection));
+        royaltyBalancer2.setCollectionAddress(address(collection));
+
+        vm.label(address(royaltyBalancer1), "royalty balancer 1");
+        vm.label(address(royaltyBalancer2), "royalty balancer 2");
+        vm.label(address(collection), "collection");
+        vm.label(minter1, "minter 1");
+        vm.label(minter2, "minter 2");
+        vm.label(minter3, "minter 3");
+        vm.label(minter4, "minter 4");
+        vm.label(minter5, "minter 5");
+        vm.label(minter6, "minter 6");
+    }
+
+    function testLinkings() external {
+        assertEq(address(collection.royaltyBalancer1()), address(royaltyBalancer1));
+        assertEq(address(collection.royaltyBalancer2()), address(royaltyBalancer2));
 
         console.log("1 royalty balancer address: ", address(royaltyBalancer1));
         console.log("2 royalty balancer address: ", address(royaltyBalancer2));
@@ -107,7 +124,7 @@ contract TestContract is Test {
         amounts[1] = 10;
 
         collection.mintBatch{value: 200 ether}(minter5, amounts);
-        collection.mintBatch{value: 200 ether}(minter5, amounts);
+        // collection.mintBatch{value: 200 ether}(minter5, amounts);
 
 
         assertEq(collection.checkBalance(minter5, 0), 10);

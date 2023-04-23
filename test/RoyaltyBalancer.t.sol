@@ -13,7 +13,8 @@ contract RoyaltyBalancerTest is Test {
 
     function setUp() public {
         vm.deal(collection, 100 ether);
-        royaltyBalancer = new RoyaltyBalancer(collection);
+        royaltyBalancer = new RoyaltyBalancer();
+        royaltyBalancer.setCollectionAddress(collection);
     }
 
     /// @dev https://docs.google.com/spreadsheets/d/1iQJPHIopqlURifxPxo9MGo67t9Kjibf7Kvul3KnAvpQ/edit?usp=sharing
@@ -53,6 +54,13 @@ contract RoyaltyBalancerTest is Test {
         assertEq(royaltyBalancer.pendingReward(minter2), 0.5 ether);
         assertEq(royaltyBalancer.pendingReward(minter3), 0);
 
-        // TODO test claimReward    
+        changePrank(minter1);
+        royaltyBalancer.claimReward();
+        assertEq(royaltyBalancer.totalShares(), 2);
+        (shares, debt) = royaltyBalancer.userInfo(minter1);
+        assertEq(shares, 1);
+        assertEq(debt, 1.5 ether);
+        assertEq(royaltyBalancer.pendingReward(minter1), 0);
+        assertEq(royaltyBalancer.accRewardPerShare(), 1.5 ether);
     }
 }
