@@ -9,7 +9,6 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 
 contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
-
   address public collection;
 
   constructor() {}

@@ -15,8 +15,8 @@ import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 
 contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     
-    using Strings for string;
-    using Address for address;
+    using Strings for uint256;
+    // using Address for address;
     // string internal _uriBase;
 
     uint256 private constant maxAmountPerID = 10;
@@ -47,7 +47,7 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     }
 
     // TODO узнать надо ли какие-то еще параметры в конструкторе и надо ли сменить string?
-    constructor(address _royaltyBalancer1, address _royaltyBalancer2 /* string memory uri_ */) ERC1155("https://example.com/api/item/{id}.json") {
+    constructor(IRoyaltyBalancer _royaltyBalancer1, IRoyaltyBalancer _royaltyBalancer2 /* string memory uri_ */) ERC1155("https://example.com/api/item/{id}.json") {
         setRoyaltyBalancers(_royaltyBalancer1, _royaltyBalancer2);
 
         /* 
@@ -168,9 +168,9 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         return balanceOf(account, id);
     }
 
-    function setRoyaltyBalancers(address _royaltyBalancer1, address _royaltyBalancer2) public onlyOwner {
-        royaltyBalancer1 = IRoyaltyBalancer(_royaltyBalancer1);
-        royaltyBalancer2 = IRoyaltyBalancer(_royaltyBalancer2);
+    function setRoyaltyBalancers(IRoyaltyBalancer _royaltyBalancer1, IRoyaltyBalancer _royaltyBalancer2) public onlyOwner {
+        royaltyBalancer1 = _royaltyBalancer1;
+        royaltyBalancer2 = _royaltyBalancer2;
     }
 
     function setDefaultRoyalty(address receiver) public onlyOwner {
@@ -190,7 +190,6 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     }
 
     function addToWhitelistInLoop(address[] memory accounts) public onlyOwner {
-        
         for (uint i = 0; i < accounts.length; i++) {
             addToWhitelist(accounts[i]);
         }
@@ -234,7 +233,7 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
 
     function uri(uint256 tokenId) override public view returns (string memory) {
         require(tokenId == 0 || tokenId == 1, "ERC1155Metadata: URI query for nonexistent token");
-        return string(abi.encodePacked(contractURI(), Strings.toString(tokenId), ".json"));
+        return string(abi.encodePacked(contractURI(), tokenId.toString(), ".json"));
     }
 
     function contractURI() public pure returns (string memory) {
@@ -249,7 +248,7 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     В этой функции будет проверка что если у того кто вызвал эту функцию (отправил средства в контракт) размер поля code > 0, 
     то это будет значит что вызывающий функцию является смарт-контрактом и сумма которую он отправляет (роялти) будет делиться на 2 части 
     и отправляться в 2 смарт-контракта для получения/распределения средств минтерам. 
-    Если же поле code < 0, то значит что это обычный адрес и минтер будет минтить себе токены и отправлять в контракт matic, 
+    Если же поле code = 0, то значит что это обычный адрес и минтер будет минтить себе токены и отправлять в контракт matic, 
     все полученные средства будут сразу же в одной транзакции отправляться владельцу контракта на его кошелек через receive() функцию.
     */
 
@@ -258,7 +257,7 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         if (msg.sender.code.length > 0) {
             uint256 amount = msg.value / 2;
             (bool successCall1, ) = address(royaltyBalancer1).call{value: amount}("");
-            (bool successCall2, ) = address(royaltyBalancer2).call{value: amount}("");
+            (bool successCall2, ) = address(royaltyBalancer2).call{value: msg.value - amount}("");
             require(successCall1 && successCall2, "Couldn't send MATIC to one of two royalty balancers");
 
             // emit MaticReceivedFromContract(msg.sender, msg.value);
