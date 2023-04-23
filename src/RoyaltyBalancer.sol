@@ -35,15 +35,7 @@ contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
 
   mapping(address => UserInfo) public userInfo;
 
-<<<<<<< HEAD
   function addMinterShare(address minter, uint256 amount) external onlyCollection {
-=======
-<<<<<<< HEAD
-  function addMinterShare(address minter, uint256 amount) external /* onlyCollection */ {
-=======
-  function addMinterShare(address minter, uint256 amount) external onlyCollection {
->>>>>>> a38e723 (royaltyBalancer v1)
->>>>>>> 1c3dee5 (merge)
     totalShares = totalShares + amount;
     userInfo[minter].shares += amount;
     userInfo[minter].debt = accRewardPerShare * userInfo[minter].shares;
@@ -64,11 +56,7 @@ contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
     payable(msg.sender).transfer(pending);
   }
 
-<<<<<<< HEAD
   receive() external payable {
-=======
-  receive() external payable onlyCollection {
->>>>>>> a38e723 (royaltyBalancer v1)
     accRewardPerShare = accRewardPerShare + msg.value / totalShares;
   }
 }

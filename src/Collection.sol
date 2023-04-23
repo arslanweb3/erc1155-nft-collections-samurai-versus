@@ -13,7 +13,6 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 
-
 contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     
     using Strings for string;
@@ -269,3 +268,4 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
             require(success, "Couldn't transfer funds");
         }
     }
+}
