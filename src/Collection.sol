@@ -13,8 +13,6 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 
-// import "./@openzeppelin/contracts/utils/ContextMixin.sol";
-
 contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     
     using Strings for string;

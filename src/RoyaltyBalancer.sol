@@ -7,6 +7,7 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 // TODO shares denominator for more precision
 
+
 contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
 
   address public collection;
@@ -34,7 +35,7 @@ contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
 
   mapping(address => UserInfo) public userInfo;
 
-  function addMinterShare(address minter, uint256 amount) external /* onlyCollection */ {
+  function addMinterShare(address minter, uint256 amount) external onlyCollection {
     totalShares = totalShares + amount;
     userInfo[minter].shares += amount;
     userInfo[minter].debt = accRewardPerShare * userInfo[minter].shares;
