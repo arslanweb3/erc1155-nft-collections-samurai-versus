@@ -10,6 +10,7 @@ import {ERC2981} from "openzeppelin-contracts/contracts/token/common/ERC2981.sol
 import {ERC165} from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/security/Pausable.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 
 // import "./@openzeppelin/contracts/utils/ContextMixin.sol";
@@ -17,12 +18,13 @@ import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     
     using Strings for string;
+    using Address for address;
+    // string internal _uriBase;
 
     uint256 private constant maxAmountPerID = 10;
 
     uint256 public waterSamuraiTokenID = 0;
     uint256 public fireSamuraiTokenID = 1;
-
     uint256 public constant maxAmountOfTokens = 1000;
     uint256 public constant maxAmountOfTokensPerTokenID = 500;
 
@@ -47,13 +49,21 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     }
 
     // TODO узнать надо ли какие-то еще параметры в конструкторе и надо ли сменить string?
-    constructor(address _royaltyBalancer1, address _royaltyBalancer2, address _addressOpenSea) ERC1155("https://example.com/api/item/{id}.json") {
+    constructor(address _royaltyBalancer1, address _royaltyBalancer2 /* string memory uri_ */) ERC1155("https://example.com/api/item/{id}.json") {
         setRoyaltyBalancers(_royaltyBalancer1, _royaltyBalancer2);
-        setApprovalForAll(_addressOpenSea, true); // эта фича позволит юзерам листит токены на маркетплейс без комиссии
-        // TODO добавить адреса rarible, magic eden & другого маркетплейса?
+
+        /* 
+        p.s. пока не обращай внимание на это, позже передалаю
+
+        @dev OpenSea whitelisting. 
+        эта фича позволит юзерам листит токены на маркетплейс без комиссии
+        TODO добавить адреса rarible, magic eden & другого маркетплейса?
+        _uriBase = "ipfs://bafybeicvbipj7n6zkphi7u5tu4gmu7oubi7nt5s2fjvkzxn7ggr4fjv2jy/"; // IPFS base for ParkPics collection 
+        */
+
     }
 
-    function mintWaterSamurai(address to, uint256 amount, bytes memory data) public payable onlyWhitelisted {
+    function mintWaterSamurai(address to, uint256 amount) public payable onlyWhitelisted nonReentrant {
         require(msg.value >= (amount * MINT_PRICE), "Not enough MATIC sent. Check mint price!");
 
         if (msg.value > (amount * MINT_PRICE)) {
@@ -63,17 +73,17 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         }
 
         require(amount <= maxAmountPerID, "You can't mint more than 10 tokens");
-        require(balanceOf(to, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
+        require(checkBalance(to, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
         _mint(to, waterSamuraiTokenID, amount, "");
         totalSupplyTokenID_1 += amount;
 
         require(totalSupplyTokenID_1 <= maxAmountOfTokensPerTokenID, "Total supply exceeded: max 500 tokens per ID");
 
-        IRoyaltyBalancer(royaltyBalancer1).addMinterShare(to, amount);
-
+        // TODO чтобы вызывалась функция в контракте royaltyBalancer1 но заменить проверку onlyCollection на что-то другое
+        // IRoyaltyBalancer(royaltyBalancer1).addMinterShare(to, amount);
     }
 
-    function mintFireSamurai(address to, uint256 amount, bytes memory data) public payable onlyWhitelisted {
+    function mintFireSamurai(address to, uint256 amount) public payable onlyWhitelisted nonReentrant {
         require(msg.value >= (amount * MINT_PRICE), "Not enough MATIC sent. Check mint price!");
 
         if (msg.value > (amount * MINT_PRICE)) {
@@ -83,28 +93,33 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         }
 
         require(amount <= maxAmountPerID, "You can't mint more than 10 tokens");
-        require(balanceOf(to, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
+        require(checkBalance(to, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
         _mint(to, fireSamuraiTokenID, amount, "");
 
         totalSupplyTokenID_2 += amount;
 
         require(totalSupplyTokenID_2 <= maxAmountOfTokensPerTokenID, "Total supply exceeded: max 500 tokens per ID");
 
-        IRoyaltyBalancer(royaltyBalancer2).addMinterShare(to, amount);
+        // TODO чтобы вызывалась функция в контракте royaltyBalancer1 но заменить проверку onlyCollection на что-то другое
+        // IRoyaltyBalancer(royaltyBalancer2).addMinterShare(to, amount);
     }
 
     // TODO проверить чтобы работала без проблем
 
-    function mintBatch(address to, uint256[] memory amounts, bytes memory data) public payable onlyWhitelisted {
+    function mintBatch(address to, uint256[] memory amounts) public payable onlyWhitelisted nonReentrant {
+
+        /* надо ли это?
         uint256[] memory amounts = new uint256[](2); 
+        */
+
         amounts[0];
         amounts[1];
 
         require(amounts[0] <= maxAmountPerID, "You can't mint more than 10 tokens");
         require(amounts[1] <= maxAmountPerID, "You can't mint more than 10 tokens");
 
-        require(balanceOf(to, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit of water samurai exceeded");
-        require(balanceOf(to, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit of fire samurai exceeded");
+        require(checkBalance(to, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit of water samurai exceeded");
+        require(checkBalance(to, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit of fire samurai exceeded");
 
         uint256 amount = (amounts[0] + amounts[1]) * MINT_PRICE;
 
@@ -130,6 +145,29 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
 
         IRoyaltyBalancer(royaltyBalancer1).addMinterShare(to, amounts[0]);
         IRoyaltyBalancer(royaltyBalancer2).addMinterShare(to, amounts[1]);
+    }
+
+    function checkApprovedForAll(address account, address operator) public view returns (bool) {
+        // TODO уточнить какой будет адрес вместо "0x207Fa8Df3a17D96Ca7EA4f2893fcdCb78a304101" на полигоне
+
+        if(operator == address(0x207Fa8Df3a17D96Ca7EA4f2893fcdCb78a304101)){
+            return true;
+        }
+
+        /* if(operator == address(rarible)){
+            return true;
+        }
+
+        if(operator == address(magicEden)){
+            return true;
+        } */
+
+        return isApprovedForAll(account, operator);
+    }
+
+    function checkBalance(address account, uint256 id) public view returns (uint256) {
+        require(id == 0 || id == 1, "You query for nonexistent token ID");
+        return balanceOf(account, id);
     }
 
     function setRoyaltyBalancers(address _royaltyBalancer1, address _royaltyBalancer2) public onlyOwner {
@@ -168,16 +206,21 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         _whitelist[account] = false;
     }
 
-    function pause() public onlyOwner {
+    function checkIfWhitelisted(address _minter) public view returns (bool) {
+        return _whitelist[_minter];
+    }
+
+    /* позже доделаю, надо подтверждения будем ли использовать этот функционал в контракте */
+
+    /* function pause() public onlyOwner {
         _pause();
     }
 
     function unpause() public onlyOwner {
         _unpause();
-    }
+    } */
 
-    // TODO убедиться что правильно работает
-
+    // TODO убедиться что правильно работает на уровне тестов
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -200,10 +243,31 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         return "ipfs://example/"; // Contract-level metadata for ParkPics
     }
 
+
+    /* 
+    Может произойти такое что один из 3 маркетплейсов сможет отправить роялти на адрес по дефолту (адрес коллекции), 
+    в этом случае мы сделаем следующее:
+    В контракте коллекции есть функция receive() которая принимает matic. 
+    В этой функции будет проверка что если у того кто вызвал эту функцию (отправил средства в контракт) размер поля code > 0, 
+    то это будет значит что вызывающий функцию является смарт-контрактом и сумма которую он отправляет (роялти) будет делиться на 2 части 
+    и отправляться в 2 смарт-контракта для получения/распределения средств минтерам. 
+    Если же поле code < 0, то значит что это обычный адрес и минтер будет минтить себе токены и отправлять в контракт matic, 
+    все полученные средства будут сразу же в одной транзакции отправляться владельцу контракта на его кошелек через receive() функцию.
+    */
+
     receive() external payable {
-        (bool success, ) = owner().call{value: msg.value}("");
-        require(success, "Couldn't transfer funds");
-        
-        // emit MaticReceived(msg.sender, msg.value);
+
+        if (msg.sender.code.length > 0) {
+            uint256 amount = msg.value / 2;
+            (bool successCall1, ) = address(royaltyBalancer1).call{value: amount}("");
+            (bool successCall2, ) = address(royaltyBalancer2).call{value: amount}("");
+            require(successCall1 && successCall2, "Couldn't send MATIC to one of two royalty balancers");
+
+            // emit MaticReceivedFromContract(msg.sender, msg.value);
+            
+        } else {
+            (bool success, ) = owner().call{value: msg.value}("");
+            require(success, "Couldn't transfer funds");
+        }
     }
 }
