@@ -269,4 +269,3 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
             require(success, "Couldn't transfer funds");
         }
     }
-}
