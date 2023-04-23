@@ -3,13 +3,18 @@ pragma solidity ^0.8.13;
 
 import {Events} from "./Events.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 // TODO shares denominator for more precision
 
-contract RoyaltyBalancer is Events, IRoyaltyBalancer {
-  address immutable public collection;
 
-  constructor (address _collection) {
+contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
+
+  address public collection;
+
+  constructor() {}
+
+  function setCollectionAddress(address _collection) public onlyOwner {
     collection = _collection;
   }
 
@@ -51,7 +56,7 @@ contract RoyaltyBalancer is Events, IRoyaltyBalancer {
     payable(msg.sender).transfer(pending);
   }
 
-  receive() external payable onlyCollection {
+  receive() external payable {
     accRewardPerShare = accRewardPerShare + msg.value / totalShares;
   }
 }
