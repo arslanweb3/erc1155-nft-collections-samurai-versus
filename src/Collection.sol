@@ -14,7 +14,6 @@ import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 
 contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
-    
     using Strings for uint256;
     // using Address for address;
     // string internal _uriBase;
@@ -49,7 +48,9 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     // TODO узнать надо ли какие-то еще параметры в конструкторе и надо ли сменить string?
     constructor(IRoyaltyBalancer _royaltyBalancer1, IRoyaltyBalancer _royaltyBalancer2 /* string memory uri_ */) ERC1155("https://example.com/api/item/{id}.json") {
         setRoyaltyBalancers(_royaltyBalancer1, _royaltyBalancer2);
-
+        _setDefaultRoyalty(address(this), royaltyFee); // to split royaltioes between balancers if marketplace cannot get royalty info
+        _setTokenRoyalty(0, address(royaltyBalancer1), royaltyFee);
+        _setTokenRoyalty(1, address(royaltyBalancer2), royaltyFee);
         /* 
         p.s. пока не обращай внимание на это, позже передалаю
 
@@ -61,50 +62,48 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
 
     }
 
-    function mintWaterSamurai(address to, uint256 amount) public payable onlyWhitelisted nonReentrant {
+    function mintWaterSamurai(uint256 amount) public payable onlyWhitelisted nonReentrant {
         require(msg.value >= (amount * MINT_PRICE), "Not enough MATIC sent. Check mint price!");
 
         if (msg.value > (amount * MINT_PRICE)) {
             uint256 remainderAmount = msg.value - (amount * MINT_PRICE);
-            (bool success, ) = to.call{value: remainderAmount}("");
+            (bool success, ) = msg.sender.call{value: remainderAmount}("");
             require(success, "Couldn't send remainder MATIC to msg.sender");
         }
 
         require(amount <= maxAmountPerID, "You can't mint more than 10 tokens");
-        require(checkBalance(to, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
-        _mint(to, waterSamuraiTokenID, amount, "");
+        require(checkBalance(msg.sender, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
+        _mint(msg.sender, waterSamuraiTokenID, amount, "");
         totalSupplyTokenID_1 += amount;
 
         require(totalSupplyTokenID_1 <= maxAmountOfTokensPerTokenID, "Total supply exceeded: max 500 tokens per ID");
 
-        // TODO чтобы вызывалась функция в контракте royaltyBalancer1 но заменить проверку onlyCollection на что-то другое
-        // IRoyaltyBalancer(royaltyBalancer1).addMinterShare(to, amount);
+        IRoyaltyBalancer(royaltyBalancer1).addMinterShare(msg.sender, amount);
     }
 
-    function mintFireSamurai(address to, uint256 amount) public payable onlyWhitelisted nonReentrant {
+    function mintFireSamurai(uint256 amount) public payable onlyWhitelisted nonReentrant {
         require(msg.value >= (amount * MINT_PRICE), "Not enough MATIC sent. Check mint price!");
 
         if (msg.value > (amount * MINT_PRICE)) {
             uint256 remainderAmount = msg.value - (amount * MINT_PRICE);
-            (bool success, ) = to.call{value: remainderAmount}("");
+            (bool success, ) = msg.sender.call{value: remainderAmount}("");
             require(success, "Couldn't send remainder MATIC to msg.sender");
         }
 
         require(amount <= maxAmountPerID, "You can't mint more than 10 tokens");
-        require(checkBalance(to, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
-        _mint(to, fireSamuraiTokenID, amount, "");
+        require(checkBalance(msg.sender, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit exceeded");
+        _mint(msg.sender, fireSamuraiTokenID, amount, "");
 
         totalSupplyTokenID_2 += amount;
 
         require(totalSupplyTokenID_2 <= maxAmountOfTokensPerTokenID, "Total supply exceeded: max 500 tokens per ID");
 
-        // TODO чтобы вызывалась функция в контракте royaltyBalancer1 но заменить проверку onlyCollection на что-то другое
-        // IRoyaltyBalancer(royaltyBalancer2).addMinterShare(to, amount);
+        IRoyaltyBalancer(royaltyBalancer2).addMinterShare(msg.sender, amount);
     }
 
     // TODO проверить чтобы работала без проблем
 
-    function mintBatch(address to, uint256[] memory amounts) public payable onlyWhitelisted nonReentrant {
+    function mintBatch(uint256[] memory amounts) public payable onlyWhitelisted nonReentrant {
 
         /* надо ли это?
         uint256[] memory amounts = new uint256[](2); 
@@ -116,8 +115,8 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         require(amounts[0] <= maxAmountPerID, "You can't mint more than 10 tokens");
         require(amounts[1] <= maxAmountPerID, "You can't mint more than 10 tokens");
 
-        require(checkBalance(to, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit of water samurai exceeded");
-        require(checkBalance(to, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit of fire samurai exceeded");
+        require(checkBalance(msg.sender, waterSamuraiTokenID) <= maxAmountPerID, "Your minting limit of water samurai exceeded");
+        require(checkBalance(msg.sender, fireSamuraiTokenID) <= maxAmountPerID, "Your minting limit of fire samurai exceeded");
 
         uint256 amount = (amounts[0] + amounts[1]) * MINT_PRICE;
 
@@ -125,7 +124,7 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
 
         if (msg.value > amount) {
             uint256 remainderAmount = msg.value - amount;
-            (bool success, ) = to.call{value: remainderAmount}("");
+            (bool success, ) = msg.sender.call{value: remainderAmount}("");
             require(success, "Couldn't send remainder MATIC to msg.sender");
         }
 
@@ -133,7 +132,7 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         ids[0] = waterSamuraiTokenID;
         ids[1] = fireSamuraiTokenID;
 
-        _mintBatch(to, ids, amounts, "");
+        _mintBatch(msg.sender, ids, amounts, "");
 
         totalSupplyTokenID_1 += amounts[0];
         totalSupplyTokenID_2 += amounts[1];
@@ -141,8 +140,8 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         require(totalSupplyTokenID_1 <= maxAmountOfTokensPerTokenID, "Total supply exceeded: max 500 tokens per ID");
         require(totalSupplyTokenID_2 <= maxAmountOfTokensPerTokenID, "Total supply exceeded: max 500 tokens per ID");
 
-        IRoyaltyBalancer(royaltyBalancer1).addMinterShare(to, amounts[0]);
-        IRoyaltyBalancer(royaltyBalancer2).addMinterShare(to, amounts[1]);
+        IRoyaltyBalancer(royaltyBalancer1).addMinterShare(msg.sender, amounts[0]);
+        IRoyaltyBalancer(royaltyBalancer2).addMinterShare(msg.sender, amounts[1]);
     }
 
     function checkApprovedForAll(address account, address operator) public view returns (bool) {
@@ -253,18 +252,9 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
     */
 
     receive() external payable {
-
-        if (msg.sender.code.length > 0) {
-            uint256 amount = msg.value / 2;
-            (bool successCall1, ) = address(royaltyBalancer1).call{value: amount}("");
-            (bool successCall2, ) = address(royaltyBalancer2).call{value: msg.value - amount}("");
-            require(successCall1 && successCall2, "Couldn't send MATIC to one of two royalty balancers");
-
-            // emit MaticReceivedFromContract(msg.sender, msg.value);
-            
-        } else {
-            (bool success, ) = owner().call{value: msg.value}("");
-            require(success, "Couldn't transfer funds");
-        }
+        uint256 amount = msg.value / 2;
+        (bool successCall1, ) = address(royaltyBalancer1).call{value: amount}("");
+        (bool successCall2, ) = address(royaltyBalancer2).call{value: msg.value - amount}("");
+        require(successCall1 && successCall2, "Couldn't send MATIC to one of two royalty balancers");
     }
 }

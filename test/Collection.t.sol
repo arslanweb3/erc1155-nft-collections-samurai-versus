@@ -6,7 +6,7 @@ import "../src/Collection.sol";
 import "../src/RoyaltyBalancer.sol";
 import {console} from "forge-std/console.sol";
 
-contract TestContract is Test {
+contract CollectionTest is Test {
 
     Collection public collection;
 
@@ -108,7 +108,7 @@ contract TestContract is Test {
         vm.startPrank(minter1);
 
         // TODO test that we can mint 10 water samurai tokens 
-        collection.mintWaterSamurai{value: 100 ether}(minter1, 10);
+        collection.mintWaterSamurai{value: 100 ether}(10);
         assertEq(collection.checkBalance(minter1, 0), 10);
 
         vm.stopPrank();
@@ -123,8 +123,8 @@ contract TestContract is Test {
         amounts[0] = 10;
         amounts[1] = 10;
 
-        collection.mintBatch{value: 200 ether}(minter5, amounts);
-        // collection.mintBatch{value: 200 ether}(minter5, amounts);
+        collection.mintBatch{value: 200 ether}(amounts);
+        // collection.mintBatch{value: 200 ether}(amounts);
 
 
         assertEq(collection.checkBalance(minter5, 0), 10);
@@ -137,7 +137,7 @@ contract TestContract is Test {
         //     vm.deal(minter1, 10000 ether);
         //     vm.startPrank(minter1);
 
-        //     collection.mintWaterSamurai{value: 100 ether}(minter1, 10);
+        //     collection.mintWaterSamurai{value: 100 ether}(10);
         //     assertEq(collection.checkBalance(minter1, 0), 10);
         //     vm.stopPrank();
         // }
