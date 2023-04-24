@@ -5,8 +5,6 @@ import {Events} from "./Events.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-// TODO shares denominator for more precision
-
 
 contract RoyaltyBalancer is Events, IRoyaltyBalancer, Ownable {
   address public collection;

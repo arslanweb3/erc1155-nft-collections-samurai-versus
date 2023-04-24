@@ -239,6 +239,11 @@ contract Collection is ERC1155, Ownable, ReentrancyGuard, ERC2981, Pausable {
         return "ipfs://example/"; // Contract-level metadata for ParkPics
     }
 
+    function withdraw() public onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success, ) = msg.sender.call{value: balance}("");
+        require(success, "Couldn't send funds to owner");
+    }
 
     /* 
     Может произойти такое что один из 3 маркетплейсов сможет отправить роялти на адрес по дефолту (адрес коллекции), 

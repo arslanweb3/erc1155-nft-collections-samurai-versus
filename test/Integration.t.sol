@@ -50,12 +50,12 @@ contract IntegrationTest is Test {
       uint256[] memory amounts = new uint256[](2); 
       amounts[0] = 5;
       amounts[1] = 10;
-      collection.mintBatch{value: 200 ether}(amounts);
+      collection.mintBatch{value: 150 ether}(amounts);
 
       changePrank(minter2);
       amounts[0] = 10;
       amounts[1] = 5;
-      collection.mintBatch{value: 200 ether}(amounts);
+      collection.mintBatch{value: 150 ether}(amounts);
     }
 
     function testRoyaltyBalance() external {
@@ -111,5 +111,22 @@ contract IntegrationTest is Test {
       assertEq(royaltyBalancer1.pendingReward(minter2), 0.7 ether);
       assertEq(royaltyBalancer2.pendingReward(minter1), 0.7 ether);
       assertEq(royaltyBalancer2.pendingReward(minter2), 0.35 ether);
+    }
+
+    function testWithdraw() external {
+      assertEq(address(collection).balance, 300 ether); // nfts minted in setUp
+
+      vm.expectRevert("Ownable: caller is not the owner");
+      collection.withdraw();
+
+      // owner withdraws money from collection
+      changePrank(collection.owner());
+      collection.withdraw();
+      // and now collection has 0 balance
+      assertEq(address(collection).balance, 0);
+    }
+
+    receive() external payable {
+      // needed to receive money from collection as this test contract is an owner
     }
 }
