@@ -7,7 +7,6 @@ import "./IRoyaltyBalancer.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 // @title Water samurais ERC1155 NFT collection.
@@ -30,8 +29,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     // later be described.....
     
     // @notice OpenZeppelin's Address and Strings libraries for ...
-    using Address for address;
-    using Strings for string;
+    using Strings for uint256;
 
     /* ******* */
     /* STORAGE */
@@ -82,7 +80,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     /* CONSTRUCTOR */
     /* *********** */
 
-    constructor(address _royaltyBalancer) ERC1155("https://example.com/api/item/{id}.json") {
+    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("https://example.com/api/item/{id}.json") {
         name = '';
         symbol = '';
         royaltyBalancer = IRoyaltyBalancer(_royaltyBalancer); // либо в конструкторе или через функцию или константа
@@ -142,6 +140,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     // ["0x5B38Da6a701c568545dCfcB03FcB875f56beddC4", "0x14723a09acff6d2a60dcdf7aa4aff308fddc160c", "0x4b0897b0513fdc7c541b6d9d7e929c4e5364d2db"]
 
     function addToWhitelist(address[] memory accounts) public onlyOwner {
+    
         for (uint256 i; i < accounts.length; i++) {
             _addToWhitelist(accounts[i]);
         }
@@ -152,6 +151,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     }
 
     function removeFromWhitelist(address[] memory accounts) public onlyOwner {
+    
         for (uint256 i; i < accounts.length; i++) {
             _removeFromWhitelist(accounts[i]);
         }
@@ -226,7 +226,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
         );
         return
             string(
-                abi.encodePacked(baseURI, Strings.toString(tokenId), '.json')
+                abi.encodePacked(baseURI, tokenId.toString(), ".json")
             );
     }
 
