@@ -86,8 +86,8 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
         royaltyBalancer = IRoyaltyBalancer(_royaltyBalancer); // либо в конструкторе или через функцию или константа
         baseURI = 'ipfs://QmaxBCL3UGoYnqg8xhjREfxiDLCUDbmTkwj6AcbUZavXmp/{id}.json';
 
-        setDefaultRoyalty(IRoyaltyBalancer(royaltyBalancer));
-        setTokenRoyalty(IRoyaltyBalancer(royaltyBalancer));
+        setDefaultRoyalty(address(royaltyBalancer));
+        setTokenRoyalty(address(royaltyBalancer));
     }
 
     /* ********* */
@@ -162,7 +162,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     }
 
     /* ROYALTY MANAGING FUNCTIONS */
-    function setDefaultRoyalty(IRoyaltyBalancer receiver) public onlyOwner {
+    function setDefaultRoyalty(address receiver) public onlyOwner {
         _setDefaultRoyalty(receiver, ROYALTY_FEE);
     }
 
@@ -170,7 +170,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
         _deleteDefaultRoyalty();
     }
 
-    function setTokenRoyalty(IRoyaltyBalancer receiver) public onlyOwner {
+    function setTokenRoyalty(address receiver) public onlyOwner {
         _setTokenRoyalty(WATER_SAMURAI_TOKEN_ID, receiver, ROYALTY_FEE);
     }
 
