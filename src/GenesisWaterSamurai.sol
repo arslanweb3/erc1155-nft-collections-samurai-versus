@@ -8,11 +8,8 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/security/Pausable.sol";
 
-// @title ....
-// @author ....
-// @notice .....
-
-contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
+// @title Collection of the first "historical" Water Samurai. Lifetime royalties for minters. Airdrops & rewards for holders.
+contract GenesisWaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
 
 
     /* ****** */
@@ -49,8 +46,9 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
 
     // @notice To keep track of how many tokens have been minted and how many are left to be minted.
     uint256 public totalSupply = 0;
+
     string public baseURI;
-    string public _contractURI = 'https://bafybeidugntaxvpfdk3vi2de4tnh3y6jx3wogka4jfwty7ai35hj57oepm.ipfs.dweb.link/water_samurai.json';
+    string public _contractURI;
 
     // @notice This is the maximum amount that whitelisted minter can mint
     uint256 public constant MAX_AMOUNT = 10;
@@ -105,12 +103,12 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     /* *********** */
 
 
-    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("https://bafybeidugntaxvpfdk3vi2de4tnh3y6jx3wogka4jfwty7ai35hj57oepm.ipfs.dweb.link/water_samurai.json") {
-        name = 'Water Samurai Token';
-        symbol = 'WST';
+    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("https://bafybeifl7gwhrvbvosy7g2jugvzsp6ks6jtdwmcgwkzhdilnwhtj4mmmvy.ipfs.dweb.link/") {
+        name = 'Genesis Water Samurai';
+        symbol = 'GWS';
         royaltyBalancer = IRoyaltyBalancer(_royaltyBalancer); 
-        baseURI = 'https://bafybeidugntaxvpfdk3vi2de4tnh3y6jx3wogka4jfwty7ai35hj57oepm.ipfs.dweb.link/water_samurai.json';
-
+        baseURI = 'https://bafybeifl7gwhrvbvosy7g2jugvzsp6ks6jtdwmcgwkzhdilnwhtj4mmmvy.ipfs.dweb.link/';
+        _contractURI = 'https://bafybeifl7gwhrvbvosy7g2jugvzsp6ks6jtdwmcgwkzhdilnwhtj4mmmvy.ipfs.dweb.link/';
         setDefaultRoyalty(address(royaltyBalancer));
         setTokenRoyalty(address(royaltyBalancer));
     }
@@ -280,7 +278,7 @@ contract WaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     }
 
     function contractURI() public view returns (string memory) {
-        return _contractURI; // see: https://docs.opensea.io/docs/contract-level-metadata
+        return _contractURI;
     }
 
     // ********* ROYALTY MANAGING FUNCTIONS ********* //
