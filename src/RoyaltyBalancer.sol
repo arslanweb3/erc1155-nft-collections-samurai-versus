@@ -4,10 +4,6 @@ pragma solidity ^0.8.13;
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-// @title ....
-// @author ....
-// @notice .....
-
 contract RoyaltyBalancer is IRoyaltyBalancer, Ownable {
 
   /* ****** */
