@@ -8,15 +8,14 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/security/Pausable.sol";
 
-// @title ....
-// @author ....
-// @notice .....
+// @title Collection of the first "historical" Fire Samurai. Lifetime royalties for minters. Airdrops & rewards for holders.
+contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
 
-contract FireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
 
     /* ****** */
     /* ERRORS */
     /* ****** */
+    
     
     error MintLimitReached();
     error TotalSupplyMinted();
@@ -26,25 +25,30 @@ contract FireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
     error FreeMintEnabled();
     error AlreadyClaimed();
 
+
     /* ****** */
     /* EVENTS */
     /* ****** */
+
 
     event MintedTokens(address minter, uint256 tokenId, uint256 amount);
     event ClaimedTokens(address claimer, uint256 tokenId, uint256 amount);
     event AddedMinterShares(address minter, uint256 tokenId, uint256 amount);
     
+    
     /* ******* */
     /* STORAGE */
     /* ******* */
+
 
     string public name;
     string public symbol;
 
     // @notice To keep track of how many tokens have been minted and how many are left to be minted.
     uint256 public totalSupply = 0;
+
     string public baseURI;
-    string public _contractURI = 'https://bafybeidugntaxvpfdk3vi2de4tnh3y6jx3wogka4jfwty7ai35hj57oepm.ipfs.dweb.link/water_samurai.json';
+    string public _contractURI;
 
     // @notice This is the maximum amount that whitelisted minter can mint
     uint256 public constant MAX_AMOUNT = 10;
@@ -93,19 +97,27 @@ contract FireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
         _;
     }
 
+
     /* *********** */
     /* CONSTRUCTOR */
     /* *********** */
 
-    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("https://bafybeidugntaxvpfdk3vi2de4tnh3y6jx3wogka4jfwty7ai35hj57oepm.ipfs.dweb.link/water_samurai.json") {
-        name = 'Fire Samurai Token';
-        symbol = 'FST';
-        royaltyBalancer = IRoyaltyBalancer(_royaltyBalancer);
-        baseURI = 'https://bafybeidugntaxvpfdk3vi2de4tnh3y6jx3wogka4jfwty7ai35hj57oepm.ipfs.dweb.link/water_samurai.json';
 
+    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("https://bafybeibhy6teapy6fyjssflkhdku23zrar2ocdbuw6nmlznaaz5rl464qm.ipfs.dweb.link/") {
+        name = 'Genesis Fire Samurai';
+        symbol = 'GFS';
+        royaltyBalancer = IRoyaltyBalancer(_royaltyBalancer);
+        baseURI = 'https://bafybeibhy6teapy6fyjssflkhdku23zrar2ocdbuw6nmlznaaz5rl464qm.ipfs.dweb.link/';
+        _contractURI = 'https://bafybeibhy6teapy6fyjssflkhdku23zrar2ocdbuw6nmlznaaz5rl464qm.ipfs.dweb.link/';
         setDefaultRoyalty(address(royaltyBalancer));
         setTokenRoyalty(address(royaltyBalancer));
     }
+
+
+    /* *********** */
+    /*  FUNCTIONS  */
+    /* *********** */
+
 
     // ********* MINT FUNCTIONS ********* //
     // @notice This function allows particular users to mint for free/claim new tokens tokens of 'FIRE_SAMURAI_TOKEN_ID'.
