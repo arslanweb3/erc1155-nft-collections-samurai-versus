@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {ERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
 import {ERC2981} from "openzeppelin-contracts/contracts/token/common/ERC2981.sol";
+import {IERC2981} from "openzeppelin-contracts/contracts/interfaces/IERC2981.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
@@ -11,11 +12,9 @@ import {Pausable} from "openzeppelin-contracts/contracts/security/Pausable.sol";
 // @title Collection of the first "historical" Fire Samurai. Lifetime royalties for minters. Airdrops & rewards for holders.
 contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
 
-
     /* ****** */
     /* ERRORS */
     /* ****** */
-    
     
     error MintLimitReached();
     error TotalSupplyMinted();
@@ -25,30 +24,23 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     error FreeMintEnabled();
     error AlreadyClaimed();
 
-
     /* ****** */
     /* EVENTS */
     /* ****** */
-
 
     event MintedTokens(address minter, uint256 tokenId, uint256 amount);
     event ClaimedTokens(address claimer, uint256 tokenId, uint256 amount);
     event AddedMinterShares(address minter, uint256 tokenId, uint256 amount);
     
-    
     /* ******* */
     /* STORAGE */
     /* ******* */
-
 
     string public name;
     string public symbol;
 
     // @notice To keep track of how many tokens have been minted and how many are left to be minted.
     uint256 public totalSupply = 0;
-
-    string public baseURI;
-    string public _contractURI;
 
     // @notice This is the maximum amount that whitelisted minter can mint
     uint256 public constant MAX_AMOUNT = 10;
@@ -61,7 +53,7 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
 
     // TODO change the mint price when will be deploying on Mainnet
     // @notice Mint price 0.05 ether = 15$ per 1 token (in BNB currency) 
-    uint256 public constant MINT_PRICE = 0.05 ether; 
+    uint256 public constant MINT_PRICE = 0.05 ether; // 0.05 BNB
 
     // @notice "royaltyFee" in basis point (=7%)
     uint96 public constant ROYALTY_FEE = 700; 
@@ -69,7 +61,6 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     // @notice This '10' (!) amount is being reserved for free minters and each time someone claims tokens this variable's count decreases
     uint256 public freeMintAmount = 10;
 
-    // TODO set the "royaltyBalancer" address during deploying on Mainnet
     // @notice "royaltyBalancer" smart-contract for receiving, managing and distributing royalty fee rewards
     // from secondary sales to initial minters 
     IRoyaltyBalancer public immutable royaltyBalancer;
@@ -85,45 +76,28 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     mapping(address => uint256) public amountEligibled;
     mapping(address => uint256) public claimedFreeMintTokens;
 
-    // @notice Used instead of require() to check that address is whitelisted to mint tokens
-    modifier onlyWhitelisted() {
-        require(whitelisted[msg.sender], "You are not whitelisted!");
-        _;
-    }
-
-    // @notice Used instead of require() to check that address is free mint eligibled to claim tokens for free
-    modifier onlyFreeMintEligibled() {
-        require(freeMintEligibled[msg.sender], "You can't mint for free!");
-        _;
-    }
-
-
     /* *********** */
     /* CONSTRUCTOR */
     /* *********** */
 
-
-    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("https://bafybeibhy6teapy6fyjssflkhdku23zrar2ocdbuw6nmlznaaz5rl464qm.ipfs.dweb.link/") {
-        name = 'Genesis Fire Samurai';
-        symbol = 'GFS';
+    constructor(IRoyaltyBalancer _royaltyBalancer) ERC1155("") {
+        name = "Genesis Fire Samurai";
+        symbol = "GFS";
         royaltyBalancer = IRoyaltyBalancer(_royaltyBalancer);
-        baseURI = 'https://bafybeibhy6teapy6fyjssflkhdku23zrar2ocdbuw6nmlznaaz5rl464qm.ipfs.dweb.link/';
-        _contractURI = 'https://bafybeibhy6teapy6fyjssflkhdku23zrar2ocdbuw6nmlznaaz5rl464qm.ipfs.dweb.link/';
         setDefaultRoyalty(address(royaltyBalancer));
         setTokenRoyalty(address(royaltyBalancer));
     }
-
 
     /* *********** */
     /*  FUNCTIONS  */
     /* *********** */
 
-
     // ********* MINT FUNCTIONS ********* //
     // @notice This function allows particular users to mint for free/claim new tokens tokens of 'FIRE_SAMURAI_TOKEN_ID'.
     // Only 'freeMintEligibled' addresses can mint tokens. Initial minters are then being added to royalty balancer contract state 
     // with their shares (1 minted token = 1 share), so that they would be able to claim their royalty fee rewards.
-    function claimFreeTokens(address to, uint256 amount) public payable nonReentrant whenNotPaused onlyFreeMintEligibled {
+    function claimFreeTokens(address to, uint256 amount) public nonReentrant whenNotPaused {
+        require(freeMintEligibled[to], "Can't claim free tokens for 'to' address, not eligibled!");
 
         if (amount > amountEligibled[to]) {
             revert ExceededFreeMintAmount();
@@ -137,12 +111,12 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
         unchecked {
             totalSupply += amount;
             claimedFreeMintTokens[to] += amount;
-            freeMintAmount -= amount;
         }
 
-        if (claimedFreeMintTokens[to] != amountEligibled[to]) {
-            revert AlreadyClaimed();
-        }
+        freeMintAmount -= amount;
+
+        require(claimedFreeMintTokens[to] <= amountEligibled[to], "You can't claim more tokens"); 
+
         emit ClaimedTokens(to, FIRE_SAMURAI_TOKEN_ID, amount);
 
         IRoyaltyBalancer(royaltyBalancer).addMinterShare(to, amount);
@@ -152,7 +126,9 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     // @notice This function mints new tokens of 'FIRE_SAMURAI_TOKEN_ID'. Minters pay 15$ in BNB to mint 1 token.
     // Only whitelisted addresses can mint tokens. Initial minters are then being added to royalty balancer contract state 
     // with their shares (1 minted token = 1 share), so that they would be able to claim their royalty fee rewards.
-    function mintSamurai(address to, uint256 amount) public payable nonReentrant whenNotPaused onlyWhitelisted {
+
+    function mintSamurai(address to, uint256 amount) public payable nonReentrant whenNotPaused {
+        require(whitelisted[to], "Can't mint tokens, address 'to' not whitelisted!");
 
         require(msg.value >= (amount * MINT_PRICE), "Not enough BNB sent. Check mint price!");
 
@@ -240,11 +216,21 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
 
     // @notice To check how many tokens left to mint (front-end helpers)
     function checkRemainingTokens(address minter) external view returns (uint256) {
-        uint256 remainingTokens = MAX_AMOUNT - balanceOf(minter, FIRE_SAMURAI_TOKEN_ID);
+        uint256 remainingTokens = MAX_AMOUNT - balanceOf(minter, FIRE_SAMURAI_TOKEN_ID) + claimedFreeMintTokens[minter];
         return remainingTokens;
     }
 
-    function isApprovedForAll(address _owner, address _operator)
+    // @notice To check how many free tokens some address minted (or claimed) (front-end helpers)
+    function checkFreeMintedTokens(address minter) external view returns (uint256) {
+        return claimedFreeMintTokens[minter];
+    }
+
+    // @notice To check how many free tokens are available to mint (or claim) (front-end helpers)
+    function checkFreeMintAmountAvailable() external view returns (uint256) {
+        return freeMintAmount;
+    }
+
+    function isApprovedForAll(address _owner, address _operator) // тестить
         public
         view
         override
@@ -266,19 +252,15 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
         override(ERC1155, ERC2981)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId); 
     }
 
-    function uri(uint256 tokenId) public view override returns (string memory) {
-        require(
-            tokenId == FIRE_SAMURAI_TOKEN_ID,
-            'ERC1155Metadata: URI query for nonexistent token'
-        );
-        return baseURI;
+    function uri(uint256 tokenId) public pure override returns (string memory) {
+        return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
     }
 
-    function contractURI() public view returns (string memory) {
-        return _contractURI; // see: https://docs.opensea.io/docs/contract-level-metadata
+    function contractURI(uint256 tokenId) public pure returns (string memory) {
+        return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
     }
 
     // ********* ROYALTY MANAGING FUNCTIONS ********* //
