@@ -216,7 +216,7 @@ contract GenesisWaterSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Paus
 
     // @notice To check how many tokens left to mint (front-end helpers)
     function checkRemainingTokens(address minter) external view returns (uint256) {
-        uint256 remainingTokens = MAX_AMOUNT - balanceOf(minter, WATER_SAMURAI_TOKEN_ID) + claimedFreeMintTokens[minter];
+        uint256 remainingTokens = MAX_AMOUNT + claimedFreeMintTokens[minter] - balanceOf(minter, WATER_SAMURAI_TOKEN_ID);
         return remainingTokens;
     }
 
