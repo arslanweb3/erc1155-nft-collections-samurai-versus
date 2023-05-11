@@ -261,7 +261,7 @@ contract GenesisFireSamurai is ERC1155, ERC2981, IGenesisWaterSamurai, Ownable, 
         return freeMintAmount;
     }
 
-    function isApprovedForAll(address _owner, address _operator) // тестить
+    function isApprovedForAll(address _owner, address _operator) 
         public
         view
         override
