@@ -5,12 +5,13 @@ import {ERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/ERC1155.so
 import {ERC2981} from "openzeppelin-contracts/contracts/token/common/ERC2981.sol";
 import {IERC2981} from "openzeppelin-contracts/contracts/interfaces/IERC2981.sol";
 import {IRoyaltyBalancer} from "./IRoyaltyBalancer.sol";
+import {IGenesisWaterSamurai} from "./IGenesisWaterSamurai.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import {Pausable} from "openzeppelin-contracts/contracts/security/Pausable.sol";
 
 // @title Collection of the first "historical" Fire Samurai. Lifetime royalties for minters. Airdrops & rewards for holders.
-contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausable {
+contract GenesisFireSamurai is ERC1155, ERC2981, IGenesisWaterSamurai, Ownable, ReentrancyGuard, Pausable {
 
     /* ****** */
     /* ERRORS */
@@ -42,7 +43,8 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     // @notice To keep track of how many tokens have been minted and how many are left to be minted.
     uint256 public totalSupply = 0;
 
-    // @notice This is the maximum amount that whitelisted minter can mint
+    // @notice This is the maximum amount that whitelisted minter can mint in total water and fire samurai tokens
+    // For example: 3 water samurai tokens and 7 fire samurai tokens (or whatever amount proportion)
     uint256 public constant MAX_AMOUNT = 10;
 
     // @notice All minters can mint multiple tokens with 1 token ID (this is how the ERC115 standard works)
@@ -65,6 +67,9 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     // from secondary sales to initial minters 
     IRoyaltyBalancer public immutable royaltyBalancer;
 
+    // @notice Genesis Water Samurai contract collection's address 
+    IGenesisWaterSamurai public waterSamuraiContract;
+
     // @notice This mapping is used to set whitelisted addresses
     mapping(address => bool) public whitelisted;
 
@@ -75,6 +80,10 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     mapping(address => bool) public freeMintEligibled;
     mapping(address => uint256) public amountEligibled;
     mapping(address => uint256) public claimedFreeMintTokens;
+
+    // @notice This mapping is to keep track which amount of tokens whitelisted address minted 
+    // p.s. claimed tokens for free not included
+    mapping(address => uint256) public mintedAmount;
 
     /* *********** */
     /* CONSTRUCTOR */
@@ -126,9 +135,10 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     // @notice This function mints new tokens of 'FIRE_SAMURAI_TOKEN_ID'. Minters pay 15$ in BNB to mint 1 token.
     // Only whitelisted addresses can mint tokens. Initial minters are then being added to royalty balancer contract state 
     // with their shares (1 minted token = 1 share), so that they would be able to claim their royalty fee rewards.
-
     function mintSamurai(address to, uint256 amount) public payable nonReentrant whenNotPaused {
         require(whitelisted[to], "Can't mint tokens, address 'to' not whitelisted!");
+
+        require(MAX_AMOUNT - getWaterSamuraiMintedAmount(to) >= amount, "ERROR");
 
         require(msg.value >= (amount * MINT_PRICE), "Not enough BNB sent. Check mint price!");
 
@@ -139,7 +149,7 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
             require(success, "Couldn't send remainder BNB to minter");
         }
 
-        if (balanceOf(to, FIRE_SAMURAI_TOKEN_ID) + amount - claimedFreeMintTokens[to] > MAX_AMOUNT) {
+        if (balanceOf(to, FIRE_SAMURAI_TOKEN_ID) + amount + getWaterSamuraiMintedAmount(to) - claimedFreeMintTokens[to] > MAX_AMOUNT) {
             revert MintLimitReached();
         }
 
@@ -156,11 +166,18 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
         _mint(to, FIRE_SAMURAI_TOKEN_ID, amount, "");
         emit MintedTokens(to, FIRE_SAMURAI_TOKEN_ID, amount);
 
+        mintedAmount[to] += amount;
+
         IRoyaltyBalancer(royaltyBalancer).addMinterShare(to, amount);
         emit AddedMinterShares(to, FIRE_SAMURAI_TOKEN_ID, amount);
     }
 
     // ********* ALLOWLIST MANAGING FUNCTIONS ********* //
+    // @notice Set Genesis Water Samurai contract collection's address
+    function setContractAddress(address collection) public onlyOwner {
+        waterSamuraiContract = IGenesisWaterSamurai(collection);
+    }
+
     // @notice This function adds addresses in loop to free mint list mapping
     function addToFreeMintList(address[] calldata accounts, uint256[] calldata amounts) public onlyOwner {
 
@@ -214,9 +231,23 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
         return whitelisted[minter];
     }
 
+    // @notice Returns amount of Genesis Fire Samurai tokens whitelisted address has minted
+    function getMintedAmount(address minter) public view returns (uint256) {
+        return mintedAmount[minter];
+    }
+
+    // @notice Returns amount of Genesis Water Samurai tokens whitelisted address has minted in another contract
+    // This function will be used to ensure that each whitelisted minter can mint max 10 tokens (whether water or fire samurai)
+    // For example: 3 water samurai tokens and 7 fire samurai tokens (or whatever)
+    function getWaterSamuraiMintedAmount(address minter) public view returns (uint256) {
+        uint256 amount = waterSamuraiContract.getMintedAmount(minter);
+        return amount;
+    }
+
     // @notice To check how many tokens left to mint (front-end helpers)
     function checkRemainingTokens(address minter) external view returns (uint256) {
-        uint256 remainingTokens = MAX_AMOUNT + claimedFreeMintTokens[minter] - balanceOf(minter, FIRE_SAMURAI_TOKEN_ID);
+        // uint256 remainingTokens = MAX_AMOUNT + claimedFreeMintTokens[minter] - balanceOf(minter, WATER_SAMURAI_TOKEN_ID);
+        uint256 remainingTokens = MAX_AMOUNT + claimedFreeMintTokens[minter] - getWaterSamuraiMintedAmount(minter) - balanceOf(minter, FIRE_SAMURAI_TOKEN_ID);
         return remainingTokens;
     }
 
@@ -256,11 +287,19 @@ contract GenesisFireSamurai is ERC1155, ERC2981, Ownable, ReentrancyGuard, Pausa
     }
 
     function uri(uint256 tokenId) public pure override returns (string memory) {
-        return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
+        if (tokenId == FIRE_SAMURAI_TOKEN_ID) {
+            return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
+        } else {
+            return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
+        }
     }
 
     function contractURI(uint256 tokenId) public pure returns (string memory) {
-        return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
+        if (tokenId == FIRE_SAMURAI_TOKEN_ID) {
+            return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
+        } else {
+            return "ipfs://QmaB8igN2YUkFHnnrHXi7wv7tdB7FCtCGdBgKrbZzxqVcG/GenesisFireSamurai.json";
+        }    
     }
 
     // ********* ROYALTY MANAGING FUNCTIONS ********* //
