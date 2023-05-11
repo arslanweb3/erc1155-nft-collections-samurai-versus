@@ -3,12 +3,16 @@ pragma solidity ^0.8.13;
 
 import {stdStorage, stdError, StdStorage, Test} from "forge-std/Test.sol";
 import "../src/GenesisWaterSamurai.sol";
+import "../src/GenesisFireSamurai.sol";
+import "../src/IGenesisWaterSamurai.sol";
+import "../src/IGenesisFireSamurai.sol";
 import "../src/RoyaltyBalancer.sol";
 import "../src/IRoyaltyBalancer.sol";
 import {console} from "forge-std/console.sol";
 
 // @notice run forge test --match-test testIntegration or forge test -vv
-// p.s. This 'testIntegration' function tests only 'GenesisWaterSamurai.sol' since 'GenesisFireSamurai.sol' smart-contract is almost the same as 'GenesisWaterSamurai.sol'
+// forge test --match-test testIntegrationUpdated -vv
+// p.s. This 'testIntegration' function tests only GenesisWaterSamurai.sol since GenesisFireSamurai.sol smart-contract is almost the same as GenesisWaterSamurai.sol
 
 contract IntegrationTest is Test {
     error MintLimitReached();
@@ -19,9 +23,11 @@ contract IntegrationTest is Test {
 
     // @notice Water & Fire samurai NFT collection
     GenesisWaterSamurai public genesisWaterSamuraiCollection;
+    GenesisFireSamurai public genesisFireSamuraiCollection;
 
     // @notice Personal royalty balancer smart-contract for each NFT collection
     RoyaltyBalancer public royaltyBalancerGenesisWaterSamurai;
+    RoyaltyBalancer public royaltyBalancerGenesisFireSamurai;
 
     // @notice 11 unwhitelisted addresses (minters)
     address public minter1 = address(0x1); // whatever address
@@ -45,10 +51,18 @@ contract IntegrationTest is Test {
       royaltyBalancerGenesisWaterSamurai = new RoyaltyBalancer();
       vm.label(address(royaltyBalancerGenesisWaterSamurai), "Royalty balancer for water samurais");
 
+      royaltyBalancerGenesisFireSamurai = new RoyaltyBalancer();
+      vm.label(address(royaltyBalancerGenesisFireSamurai), "Royalty balancer for fire samurais");
+
       genesisWaterSamuraiCollection = new GenesisWaterSamurai(IRoyaltyBalancer(royaltyBalancerGenesisWaterSamurai));
       vm.label(address(genesisWaterSamuraiCollection), "Genesis Water samurais NFT collection");
 
       royaltyBalancerGenesisWaterSamurai.setCollectionAddress(address(genesisWaterSamuraiCollection));
+
+      genesisFireSamuraiCollection = new GenesisFireSamurai(IRoyaltyBalancer(royaltyBalancerGenesisFireSamurai));
+      vm.label(address(genesisWaterSamuraiCollection), "Genesis Fire samurais NFT collection");
+
+      royaltyBalancerGenesisFireSamurai.setCollectionAddress(address(genesisFireSamuraiCollection));
 
       // @notice We give OpenSea marketplace 100 BNB
       vm.label(address(openSeaMarketplace), "OpenSea marketplace");
@@ -83,6 +97,25 @@ contract IntegrationTest is Test {
 
       // @notice Add to whitelist 11 minters
       genesisWaterSamuraiCollection.addToWhitelist(accounts);
+
+      address[] memory accounts_ = new address[](10);
+
+      accounts_[0] = minter1;
+      accounts_[1] = minter2;
+      accounts_[2] = minter3;
+      accounts_[3] = minter4;
+      accounts_[4] = minter5;
+      accounts_[5] = minter6;
+      accounts_[6] = minter7;
+      accounts_[7] = minter8;
+      accounts_[8] = minter9;
+      accounts_[9] = minter10;
+
+      genesisFireSamuraiCollection.addToWhitelist(accounts_);
+
+      genesisWaterSamuraiCollection.setContractAddress(address(genesisFireSamuraiCollection));
+      genesisFireSamuraiCollection.setContractAddress(address(genesisWaterSamuraiCollection));
+
     }
 
     function testIntegration() public { 
@@ -858,5 +891,236 @@ contract IntegrationTest is Test {
         console.log("Collection's symbol -", genesisWaterSamuraiCollection.symbol());
 
         console.log("--------------------------------------------------------------------------------------------------------");
+    }
+
+
+    function testIntegrationUpdated() public {
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("0) TESTING OWNERSHIP TRANSFERING");
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("I deployed genesis water samurai collection contract and owner of that contract is:", genesisWaterSamuraiCollection.owner());
+        console.log("I deployed genesis fire samurai collection contract and owner of that contract is:", genesisFireSamuraiCollection.owner());
+
+        console.log("I deployed roaylty balancer contract (water samurai) and owner of that contract is:", royaltyBalancerGenesisWaterSamurai.owner());
+        console.log("I deployed roaylty balancer contract (fire samurai) and owner of that contract is:", royaltyBalancerGenesisFireSamurai.owner());
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("I am (developer) transfering ownership of these contracts to new owner");
+
+        genesisWaterSamuraiCollection.transferOwnership(address(newOwner));
+        royaltyBalancerGenesisWaterSamurai.transferOwnership(address(newOwner));
+
+        genesisFireSamuraiCollection.transferOwnership(address(newOwner));
+        royaltyBalancerGenesisFireSamurai.transferOwnership(address(newOwner));
+
+        assertEq(genesisWaterSamuraiCollection.owner(), address(newOwner));
+        assertEq(royaltyBalancerGenesisWaterSamurai.owner(), address(newOwner));
+        assertEq(genesisFireSamuraiCollection.owner(), address(newOwner));
+        assertEq(royaltyBalancerGenesisFireSamurai.owner(), address(newOwner));
+
+        vm.stopPrank();
+
+        console.log("Genesis Water Samurai collection's new owner address is:", genesisWaterSamuraiCollection.owner());
+        console.log("Genesis Fire Samurai collection's new owner address is:", genesisFireSamuraiCollection.owner());
+
+        console.log("Royalty balancer (water samurai) contract's new owner address is:", royaltyBalancerGenesisWaterSamurai.owner());
+        console.log("Royalty balancer (fire samurai) contract's new owner address is:", royaltyBalancerGenesisFireSamurai.owner());
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("1) TESTING FREE MINT STAGE");
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Say we want to give 11 samurai tokens to mint for free to 11 specific users who won them in contest");
+
+        vm.startPrank(genesisWaterSamuraiCollection.owner());
+
+        address[] memory accounts = new address[](11);
+        accounts[0] = minter1;
+        accounts[1] = minter2;
+        accounts[2] = minter3;
+        accounts[3] = minter4;
+        accounts[4] = minter5;
+        accounts[5] = minter6;
+        accounts[6] = minter7;
+        accounts[7] = minter8;
+        accounts[8] = minter9;
+        accounts[9] = minter10;
+        accounts[10] = minter11;
+
+        uint256[] memory amounts = new uint256[](11);
+        amounts[0] = 1;
+        amounts[1] = 1;
+        amounts[2] = 1;
+        amounts[3] = 1;
+        amounts[4] = 1;
+        amounts[5] = 1;
+        amounts[6] = 1;
+        amounts[7] = 1;
+        amounts[8] = 1;
+        amounts[9] = 1;
+        amounts[10] = 1;
+
+        genesisWaterSamuraiCollection.addToFreeMintList(accounts, amounts);
+
+        vm.stopPrank();
+
+        console.log("I added minters to 'addToFreeMintList' and gave each of them 1 token to mint for free");
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Say we want to give 10 fire tokens to mint for free to 10 specific users who won them in contest");
+
+        vm.startPrank(genesisFireSamuraiCollection.owner());
+
+        address[] memory accounts_ = new address[](10);
+        accounts_[0] = minter1;
+        accounts_[1] = minter2;
+        accounts_[2] = minter3;
+        accounts_[3] = minter4;
+        accounts_[4] = minter5;
+        accounts_[5] = minter6;
+        accounts_[6] = minter7;
+        accounts_[7] = minter8;
+        accounts_[8] = minter9;
+        accounts_[9] = minter10;
+
+        uint256[] memory amounts_ = new uint256[](10);
+        amounts_[0] = 1;
+        amounts_[1] = 1;
+        amounts_[2] = 1;
+        amounts_[3] = 1;
+        amounts_[4] = 1;
+        amounts_[5] = 1;
+        amounts_[6] = 1;
+        amounts_[7] = 1;
+        amounts_[8] = 1;
+        amounts_[9] = 1;
+
+        genesisFireSamuraiCollection.addToFreeMintList(accounts_, amounts_);
+
+        vm.stopPrank();
+
+        console.log("I added minters to 'addToFreeMintList' and gave each of them 1 token to mint for free");
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Let's test that 'addToFreeMintList' function works correctly and minters can mint for free:");
+
+        console.log("------------------");    
+
+        (bool minter1bool, uint256 minter1amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter1));
+        console.log("Is minter1 eligibled to mint for free? -", minter1bool, " Amount of tokens he can mint -", minter1amount);
+
+        (bool minter2bool, uint256 minter2amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter2));
+        console.log("Is minter2 eligibled to mint for free? -", minter2bool, " Amount of tokens he can mint -", minter2amount);
+
+        (bool minter3bool, uint256 minter3amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter3));
+        console.log("Is minter3 eligibled to mint for free? -", minter3bool, " Amount of tokens he can mint -", minter3amount);
+
+        (bool minter4bool, uint256 minter4amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter4));
+        console.log("Is minter4 eligibled to mint for free? -", minter4bool, " Amount of tokens he can mint -", minter4amount);
+
+        (bool minter5bool, uint256 minter5amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter5));
+        console.log("Is minter5 eligibled to mint for free? -", minter5bool, " Amount of tokens he can mint -", minter5amount);
+
+        (bool minter6bool, uint256 minter6amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter6));
+        console.log("Is minter6 eligibled to mint for free? -", minter6bool, " Amount of tokens he can mint -", minter6amount);
+
+        (bool minter7bool, uint256 minter7amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter7));
+        console.log("Is minter7 eligibled to mint for free? -", minter7bool, " Amount of tokens he can mint -", minter7amount);
+
+        (bool minter8bool, uint256 minter8amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter8));
+        console.log("Is minter8 eligibled to mint for free? -", minter8bool, " Amount of tokens he can mint -", minter8amount);
+
+        (bool minter9bool, uint256 minter9amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter9));
+        console.log("Is minter9 eligibled to mint for free? -", minter9bool, " Amount of tokens he can mint -", minter9amount);
+
+        (bool minter10bool, uint256 minter10amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter10));
+        console.log("Is minter10 eligibled to mint for free? -", minter10bool, " Amount of tokens he can mint -", minter10amount);
+
+        (bool minter11bool, uint256 minter11amount) = genesisWaterSamuraiCollection.isFreeMintEligibled(address(minter11));
+        console.log("Is minter11 eligibled to mint for free? -", minter11bool, " Amount of tokens he can mint -", minter11amount);
+
+        console.log("--------------------------------------------------------------------------------------------------------"); 
+
+        console.log("Let's test that 'addToFreeMintList' function works correctly and minters can mint for free:");
+
+        console.log("------------------");    
+
+        (bool minter1bool_, uint256 minter1amount_) = genesisFireSamuraiCollection.isFreeMintEligibled(address(minter1));
+        console.log("Is minter1 eligibled to mint for free? -", minter1bool_, " Amount of tokens he can mint -", minter1amount_);
+
+        (bool minter2bool_, uint256 minter2amount_) = genesisFireSamuraiCollection.isFreeMintEligibled(address(minter2));
+        console.log("Is minter2 eligibled to mint for free? -", minter2bool_, " Amount of tokens he can mint -", minter2amount_);
+
+        console.log("--------------------------------------------------------------------------------------------------------"); 
+
+        vm.startPrank(minter1);
+        
+        console.log("Minter1 is trying to mint 1 token (water samurai) for free (now all actions are happening from him):");
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter1), 1);
+        assertEq(genesisWaterSamuraiCollection.balanceOf(address(minter1), 1), 1);
+
+        console.log("Minter1 is trying to mint 7 tokens (water samurai):");
+        genesisWaterSamuraiCollection.mintSamurai{value: 0.5 ether}(address(minter1), 7);
+        assertEq(genesisWaterSamuraiCollection.balanceOf(address(minter1), 1), 8); // + 1 free token
+
+        console.log("Minter1 (water samurai) minted amount : ", genesisWaterSamuraiCollection.getMintedAmount(address(minter1)));
+
+        console.log("Minter1 is trying to mint 2 tokens (water samurai):");
+        genesisFireSamuraiCollection.mintSamurai{value: 0.5 ether}(address(minter1), 2);
+        assertEq(genesisFireSamuraiCollection.balanceOf(address(minter1), 1), 2);
+
+        console.log("Minter1 (fire samurai) minted amount : ", genesisWaterSamuraiCollection.getFireSamuraiMintedAmount(address(minter1)));
+
+        console.log("'checkRemainingTokens' amount : ", genesisWaterSamuraiCollection.checkRemainingTokens(address(minter1)));
+
+
+        vm.stopPrank();
+
+        console.log("Minter1's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter1), 1));
+        console.log("Minter1's balance of fire samurai tokens:", genesisFireSamuraiCollection.balanceOf(address(minter1), 1));
+
+        assertEq(genesisWaterSamuraiCollection.freeMintAmount(), 10);
+        console.log("Show remaining reserved tokens for free mint (this amount decreases with each mint):", genesisWaterSamuraiCollection.freeMintAmount());
+
+        console.log("------------------");    
+
+        vm.startPrank(minter2);
+        
+        console.log("Minter2 is trying to mint 1 token (fire samurai) for free (now all actions are happening from him):");
+        genesisFireSamuraiCollection.claimFreeTokens(address(minter2), 1);
+        console.log("balance ", genesisFireSamuraiCollection.balanceOf(minter2, 1));
+        assertEq(genesisFireSamuraiCollection.balanceOf(address(minter2), 1), 1);
+
+        console.log("'checkRemainingTokens' amount : ", genesisWaterSamuraiCollection.checkRemainingTokens(address(minter2)));
+
+        console.log("Minter2 is trying to mint 10 tokens (water samurai):");
+        genesisWaterSamuraiCollection.mintSamurai{value: 0.5 ether}(address(minter2), 10);
+        assertEq(genesisWaterSamuraiCollection.balanceOf(address(minter2), 1), 10); 
+
+        console.log("Minter2 (water samurai) minted amount : ", genesisWaterSamuraiCollection.getMintedAmount(address(minter2)));
+
+        console.log("Minter2 (water samurai) minted amount : ", genesisFireSamuraiCollection.getWaterSamuraiMintedAmount(address(minter2)));
+        console.log("Minter2 (fire samurai) minted amount : ", genesisWaterSamuraiCollection.getFireSamuraiMintedAmount(address(minter2)));
+
+        console.log("'checkRemainingTokens' amount : ", genesisWaterSamuraiCollection.checkRemainingTokens(address(minter2)));
+
+
+        vm.stopPrank();
+
+        console.log("Minter1's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter2), 1));
+        console.log("Minter1's balance of fire samurai tokens:", genesisFireSamuraiCollection.balanceOf(address(minter2), 1));
+
+        assertEq(genesisFireSamuraiCollection.freeMintAmount(), 9);
+        console.log("Show remaining reserved tokens for free mint (this amount decreases with each mint):", genesisFireSamuraiCollection.freeMintAmount());
+
+        console.log("------------------");   
     }
 }
