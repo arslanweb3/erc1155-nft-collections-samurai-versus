@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import {stdStorage, stdError, StdStorage, Test} from "forge-std/Test.sol";
 import "../src/GenesisWaterSamurai.sol";
@@ -10,16 +10,18 @@ import "../src/RoyaltyBalancer.sol";
 import "../src/IRoyaltyBalancer.sol";
 import {console} from "forge-std/console.sol";
 
-// @notice run forge test --match-test testIntegration or forge test -vv
-// forge test --match-test testIntegrationUpdated -vv
-// p.s. This 'testIntegration' function tests only GenesisWaterSamurai.sol since GenesisFireSamurai.sol smart-contract is almost the same as GenesisWaterSamurai.sol
-
+/* Try to run these commands in console separately:
+    forge test -vv
+    forge test --match-contract IntegrationTest --match-test testIntegration -vv
+    forge test --match testIntegrationUpdated -vv 
+*/
 contract IntegrationTest is Test {
     error MintLimitReached();
     error TotalSupplyMinted();
     error ExceededFreeMintAmount();
     error FreeMintNotEnabled();
     error AlreadyClaimed();
+    error ClaimNotAvailable();
 
     // @notice Water & Fire samurai NFT collection
     GenesisWaterSamurai public genesisWaterSamuraiCollection;
@@ -60,7 +62,7 @@ contract IntegrationTest is Test {
       royaltyBalancerGenesisWaterSamurai.setCollectionAddress(address(genesisWaterSamuraiCollection));
 
       genesisFireSamuraiCollection = new GenesisFireSamurai(IRoyaltyBalancer(royaltyBalancerGenesisFireSamurai));
-      vm.label(address(genesisWaterSamuraiCollection), "Genesis Fire samurais NFT collection");
+      vm.label(address(genesisFireSamuraiCollection), "Genesis Fire samurais NFT collection");
 
       royaltyBalancerGenesisFireSamurai.setCollectionAddress(address(genesisFireSamuraiCollection));
 
@@ -71,8 +73,8 @@ contract IntegrationTest is Test {
       // @notice We give each minter 2 BNB to pay for mint, for gas fee and some extra BNB
       vm.deal(minter1, 2 ether); // 2 BNB
       vm.deal(minter2, 2 ether); // 2 BNB
-      vm.deal(minter3, 2 ether); // 2 BNB
-      vm.deal(minter4, 2 ether); // 2 BNB
+      vm.deal(minter3, 70 ether); // 70 BNB
+      vm.deal(minter4, 20 ether); // 2 BNB
       vm.deal(minter5, 2 ether); // 2 BNB
       vm.deal(minter6, 2 ether); // 2 BNB
       vm.deal(minter7, 2 ether); // 2 BNB
@@ -115,7 +117,6 @@ contract IntegrationTest is Test {
 
       genesisWaterSamuraiCollection.setContractAddress(address(genesisFireSamuraiCollection));
       genesisFireSamuraiCollection.setContractAddress(address(genesisWaterSamuraiCollection));
-
     }
 
     function testIntegration() public { 
@@ -139,10 +140,25 @@ contract IntegrationTest is Test {
         assertEq(genesisWaterSamuraiCollection.owner(), address(newOwner));
         assertEq(royaltyBalancerGenesisWaterSamurai.owner(), address(newOwner));
 
-        vm.stopPrank();
-
         console.log("Genesis Water Samurai collection's new owner address is:", genesisWaterSamuraiCollection.owner());
         console.log("Royalty balancer contract's new owner address is:", royaltyBalancerGenesisWaterSamurai.owner());
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Owner() called 'setWhitelistMintStage' function");
+
+        vm.startPrank(genesisWaterSamuraiCollection.owner());
+        genesisWaterSamuraiCollection.setWhitelistMintStage();
+
+        assertEq(genesisWaterSamuraiCollection.checkWhitelistMintAvailable(), true);
+        assertEq(genesisWaterSamuraiCollection.checkPublicMintAvailable(), false);
+        assertEq(genesisWaterSamuraiCollection.checkFreeMintTokensReserved(), true);
+
+        console.log("'checkWhitelistMintAvailable': ", genesisWaterSamuraiCollection.checkWhitelistMintAvailable());
+        console.log("'checkPublicMintAvailable': ", genesisWaterSamuraiCollection.checkPublicMintAvailable()); 
+        console.log("'checkFreeMintTokensReserved': ", genesisWaterSamuraiCollection.checkFreeMintTokensReserved());
+
+        vm.stopPrank();
 
         console.log("--------------------------------------------------------------------------------------------------------");
 
@@ -522,7 +538,7 @@ contract IntegrationTest is Test {
         assertEq(genesisWaterSamuraiCollection.balanceOf(address(minter1), 1), 11);
 
         console.log("Minter1's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter1), 1), "(+1 token because he claimed it for free)");
-        console.log("Minter1 payed 0.5 BNB to mint 10 tokens.");
+        console.log("Minter1 payed 0.5 BNB to mint 10 tokens");
 
         console.log("The collection's contract balance is:", address(genesisWaterSamuraiCollection).balance, "(in decimals).");
 
@@ -894,6 +910,13 @@ contract IntegrationTest is Test {
     }
 
 
+
+
+
+
+
+
+
     function testIntegrationUpdated() public {
         console.log("--------------------------------------------------------------------------------------------------------");
 
@@ -932,7 +955,38 @@ contract IntegrationTest is Test {
 
         console.log("--------------------------------------------------------------------------------------------------------");
 
-        console.log("1) TESTING FREE MINT STAGE");
+        console.log("Owner() called 'setWhitelistMintStage()' function for 'genesisWaterSamuraiCollection' contract");
+
+        vm.startPrank(genesisWaterSamuraiCollection.owner());
+        genesisWaterSamuraiCollection.setWhitelistMintStage();
+
+        assertEq(genesisWaterSamuraiCollection.checkWhitelistMintAvailable(), true);
+        assertEq(genesisWaterSamuraiCollection.checkPublicMintAvailable(), false);
+        assertEq(genesisWaterSamuraiCollection.checkFreeMintTokensReserved(), true);
+
+        console.log("'checkWhitelistMintAvailable': ", genesisWaterSamuraiCollection.checkWhitelistMintAvailable());
+        console.log("'checkPublicMintAvailable': ", genesisWaterSamuraiCollection.checkPublicMintAvailable()); 
+        console.log("'checkFreeMintTokensReserved': ", genesisWaterSamuraiCollection.checkFreeMintTokensReserved());
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Owner() called 'setWhitelistMintStage()' function for 'genesisFireSamuraiCollection' contract");
+
+        genesisFireSamuraiCollection.setWhitelistMintStage();
+
+        assertEq(genesisFireSamuraiCollection.checkWhitelistMintAvailable(), true);
+        assertEq(genesisFireSamuraiCollection.checkPublicMintAvailable(), false);
+        assertEq(genesisFireSamuraiCollection.checkFreeMintTokensReserved(), true);
+
+        console.log("'checkWhitelistMintAvailable': ", genesisFireSamuraiCollection.checkWhitelistMintAvailable());
+        console.log("'checkPublicMintAvailable': ", genesisFireSamuraiCollection.checkPublicMintAvailable()); 
+        console.log("'checkFreeMintTokensReserved': ", genesisFireSamuraiCollection.checkFreeMintTokensReserved());
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("TESTING FREE MINT STAGE");
 
         console.log("--------------------------------------------------------------------------------------------------------");
 
@@ -1073,7 +1127,7 @@ contract IntegrationTest is Test {
 
         console.log("Minter1 (water samurai) minted amount : ", genesisWaterSamuraiCollection.getMintedAmount(address(minter1)));
 
-        console.log("Minter1 is trying to mint 2 tokens (water samurai):");
+        console.log("Minter1 is trying to mint 2 tokens (fire samurai):");
         genesisFireSamuraiCollection.mintSamurai{value: 0.5 ether}(address(minter1), 2);
         assertEq(genesisFireSamuraiCollection.balanceOf(address(minter1), 1), 2);
 
@@ -1096,7 +1150,7 @@ contract IntegrationTest is Test {
         
         console.log("Minter2 is trying to mint 1 token (fire samurai) for free (now all actions are happening from him):");
         genesisFireSamuraiCollection.claimFreeTokens(address(minter2), 1);
-        console.log("balance ", genesisFireSamuraiCollection.balanceOf(minter2, 1));
+        console.log("Balance ", genesisFireSamuraiCollection.balanceOf(minter2, 1));
         assertEq(genesisFireSamuraiCollection.balanceOf(address(minter2), 1), 1);
 
         console.log("'checkRemainingTokens' amount : ", genesisWaterSamuraiCollection.checkRemainingTokens(address(minter2)));
@@ -1121,6 +1175,171 @@ contract IntegrationTest is Test {
         assertEq(genesisFireSamuraiCollection.freeMintAmount(), 9);
         console.log("Show remaining reserved tokens for free mint (this amount decreases with each mint):", genesisFireSamuraiCollection.freeMintAmount());
 
-        console.log("------------------");   
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Owner() called 'setPublicMintStage()' function for 'genesisWaterSamuraiCollection' contract");
+
+        vm.startPrank(genesisWaterSamuraiCollection.owner());
+        genesisWaterSamuraiCollection.setPublicMintStage();
+
+        assertEq(genesisWaterSamuraiCollection.checkWhitelistMintAvailable(), false);
+        assertEq(genesisWaterSamuraiCollection.checkPublicMintAvailable(), true);
+        assertEq(genesisWaterSamuraiCollection.checkFreeMintTokensReserved(), true);
+
+        console.log("'checkWhitelistMintAvailable': ", genesisWaterSamuraiCollection.checkWhitelistMintAvailable());
+        console.log("'checkPublicMintAvailable': ", genesisWaterSamuraiCollection.checkPublicMintAvailable()); 
+        console.log("'checkFreeMintTokensReserved': ", genesisWaterSamuraiCollection.checkFreeMintTokensReserved());
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        vm.startPrank(minter3); 
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 18 
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount()); 
+
+        console.log("minter3 mints now 472 tokens and he is supposed to be able to mint");
+        genesisWaterSamuraiCollection.mintSamurai{value: 47.2 ether}(address(minter3), 472); 
+        console.log("Minter3's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter3), 1));
+
+        console.log("total minted = ", genesisWaterSamuraiCollection.totalSupply(), "(minter3 balance + tokens that were previously minted)");
+        console.log("+ 10 tokens remaining to mint (freeMintAmount)");
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Owner() called 'releaseReservedTokens()' function for 'genesisWaterSamuraiCollection' contract");
+
+        vm.startPrank(genesisWaterSamuraiCollection.owner());
+        genesisWaterSamuraiCollection.releaseReservedTokens();
+
+        assertEq(genesisWaterSamuraiCollection.checkWhitelistMintAvailable(), false);
+        assertEq(genesisWaterSamuraiCollection.checkPublicMintAvailable(), true);
+        assertEq(genesisWaterSamuraiCollection.checkFreeMintTokensReserved(), false);
+
+        console.log("'checkWhitelistMintAvailable': ", genesisWaterSamuraiCollection.checkWhitelistMintAvailable());
+        console.log("'checkPublicMintAvailable': ", genesisWaterSamuraiCollection.checkPublicMintAvailable()); 
+        console.log("'checkFreeMintTokensReserved': ", genesisWaterSamuraiCollection.checkFreeMintTokensReserved());
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        vm.startPrank(minter4); 
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 490 
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount()); 
+
+        console.log("calling 'claimFreeTokens' will revert with 'ClaimNotAvailable()' for minter4");
+        vm.expectRevert(ClaimNotAvailable.selector);
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter4), 1);
+
+        console.log("minter4 mints now remiainin 5 tokens and he is supposed to be able to mint!");
+        genesisWaterSamuraiCollection.mintSamurai{value: 0.5 ether}(address(minter4), 5); 
+        console.log("Minter4's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter4), 1));
+
+        console.log("total minted =", genesisWaterSamuraiCollection.totalSupply(), "(minter4 balance + ALL tokens that were previously minted)");
+        console.log(" (p.s. -5 tokens remaining to mint (freeMintAmount))");
+
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 495 
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 5
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        console.log("Owner() called 'reserveFreeMintTokens()' function for 'genesisWaterSamuraiCollection' contract");
+
+        vm.startPrank(genesisWaterSamuraiCollection.owner());
+        genesisWaterSamuraiCollection.reserveFreeMintTokens();
+
+        assertEq(genesisWaterSamuraiCollection.checkWhitelistMintAvailable(), false);
+        assertEq(genesisWaterSamuraiCollection.checkPublicMintAvailable(), true);
+        assertEq(genesisWaterSamuraiCollection.checkFreeMintTokensReserved(), true);
+
+        console.log("'checkWhitelistMintAvailable': ", genesisWaterSamuraiCollection.checkWhitelistMintAvailable());
+        console.log("'checkPublicMintAvailable': ", genesisWaterSamuraiCollection.checkPublicMintAvailable()); 
+        console.log("'checkFreeMintTokensReserved': ", genesisWaterSamuraiCollection.checkFreeMintTokensReserved());
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        vm.startPrank(minter5);
+
+        console.log("minter5 claims 1 token");
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter5), 1);
+
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 496
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 4
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+
+        vm.startPrank(minter6);
+
+        console.log("minter6 claims 1 token");
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter6), 1);
+
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 497
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 3
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+
+        vm.startPrank(minter7);
+
+        console.log("minter7 claims 1 token");
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter7), 1);
+
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 498
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 2
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+
+        vm.startPrank(minter8);
+
+        console.log("minter8 claims 1 token");
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter8), 1);
+
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 499
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 1
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        vm.startPrank(minter9);
+
+        console.log("minter9 claims 1 token");
+        genesisWaterSamuraiCollection.claimFreeTokens(address(minter9), 1);
+
+        console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 500
+        console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 0
+
+        vm.stopPrank();
+
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        // you can try thic snippet of code but it will fail with 'All free mint tokens were claimed'
+
+        // vm.startPrank(minter10);
+
+        // console.log("minter10 claims 1 token");
+        // genesisWaterSamuraiCollection.claimFreeTokens(address(minter10), 1);
+
+        // console.log("'totalSupply': ", genesisWaterSamuraiCollection.totalSupply()); // 500
+        // console.log("'freeMintAmount': ", genesisWaterSamuraiCollection.freeMintAmount());  // 0
+
+        // vm.stopPrank();
+
+        // console.log("--------------------------------------------------------------------------------------------------------");
     }
 }
