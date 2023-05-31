@@ -661,6 +661,19 @@ contract IntegrationTest is Test {
         console.log("Minter7 payed 0.1 BNB to mint 2 tokens.");
         console.log("The collection's contract balance is:", address(genesisWaterSamuraiCollection).balance, "(in decimals)."); 
 
+        console.log("--------------------------------------------------------------------------------------------------------");
+
+        // console.log("Minter9 is trying to mint 5 tokens (now all actions are happening from him):");
+
+        // vm.startPrank(minter9);
+        // genesisWaterSamuraiCollection.mintSamurai{value: 0.25 ether}(address(minter9), 5);
+        // assertEq(genesisWaterSamuraiCollection.balanceOf(address(minter9), 1), 6);
+        // vm.stopPrank();
+
+        // console.log("Minter9's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter9), 1), "(+1 token because he claimed it for free)");
+        // console.log("Minter9 payed 0.25 BNB to mint 5 tokens.");
+        // console.log("The collection's contract balance is:", address(genesisWaterSamuraiCollection).balance, "(in decimals)."); 
+
         console.log("--------------------------------------------------------------------------------------------------------");    
 
         console.log("Minter8 is trying to mint 3 tokens (now all actions are happening from him):");
@@ -672,19 +685,6 @@ contract IntegrationTest is Test {
 
         console.log("Minter8's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter8), 1), "(+1 token because he claimed it for free)");
         console.log("Minter8 payed 0.15 BNB to mint 3 tokens.");
-        console.log("The collection's contract balance is:", address(genesisWaterSamuraiCollection).balance, "(in decimals)."); 
-
-        console.log("--------------------------------------------------------------------------------------------------------");    
-
-        console.log("Minter9 is trying to mint 5 tokens (now all actions are happening from him):");
-
-        vm.startPrank(minter9);
-        genesisWaterSamuraiCollection.mintSamurai{value: 0.25 ether}(address(minter9), 5);
-        assertEq(genesisWaterSamuraiCollection.balanceOf(address(minter9), 1), 6);
-        vm.stopPrank();
-
-        console.log("Minter9's balance of water samurai tokens:", genesisWaterSamuraiCollection.balanceOf(address(minter9), 1), "(+1 token because he claimed it for free)");
-        console.log("Minter9 payed 0.25 BNB to mint 5 tokens.");
         console.log("The collection's contract balance is:", address(genesisWaterSamuraiCollection).balance, "(in decimals)."); 
 
         console.log("--------------------------------------------------------------------------------------------------------");    
@@ -716,13 +716,13 @@ contract IntegrationTest is Test {
         console.log("--------------------------------------------------------------------------------------------------------");   
 
         console.log("Let's check the total amount of minted tokens.");
-        assertEq(genesisWaterSamuraiCollection.totalSupply(), 86);
+        assertEq(genesisWaterSamuraiCollection.totalSupply(), 81);
         console.log("The collection's total supply is:", genesisWaterSamuraiCollection.totalSupply()); 
 
         console.log("--------------------------------------------------------------------------------------------------------");    
 
         console.log("Let's check how many BNB collection's contract has received.");
-        assertEq(address(genesisWaterSamuraiCollection).balance, 3.75 ether);
+        assertEq(address(genesisWaterSamuraiCollection).balance, 3.5 ether);
         console.log("The collection's contract balance is:", address(genesisWaterSamuraiCollection).balance); 
 
         console.log("--------------------------------------------------------------------------------------------------------");    
@@ -816,17 +816,17 @@ contract IntegrationTest is Test {
 
         console.log("--------------------------------------------------------------------------------------------------------");
 
-        console.log("Minter1 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter1)), "(~0.268 BNB)");
-        console.log("Minter2 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter2)), "(~0.268 BNB)");
-        console.log("Minter3 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter3)), "(~0.0976 BNB)");
-        console.log("Minter4 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter4)), "(~0.195 BNB)");
-        console.log("Minter5 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter5)), "(~0.170 BNB)");
-        console.log("Minter6 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter6)), "(~0.268 BNB)");
-        console.log("Minter7 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter7)), "(~0.0732 BNB)");
-        console.log("Minter8 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter8)), "(~0.0976 BNB)");
-        console.log("Minter9 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter9)), "(~0.146 BNB)");
-        console.log("Minter10 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter10)), "(~0.244 BNB)");
-        console.log("Minter11 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter11)), "(~0.268 BNB)");
+        console.log("Minter1 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter1)), "(~0.285 BNB)");
+        console.log("Minter2 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter2)), "(~0.285 BNB)");
+        console.log("Minter3 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter3)), "(~0.103 BNB)");
+        console.log("Minter4 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter4)), "(~0.207 BNB)");
+        console.log("Minter5 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter5)), "(~0.181 BNB)");
+        console.log("Minter6 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter6)), "(~0.285 BNB)");
+        console.log("Minter7 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter7)), "(~0.0777 BNB)");
+        console.log("Minter8 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter8)), "(~0.103 BNB)");
+        console.log("Minter9 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter9)), "(~0.0259 BNB)");
+        console.log("Minter10 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter10)), "(~0.259 BNB)");
+        console.log("Minter11 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter11)), "(~0.285 BNB)");
 
         console.log("--------------------------------------------------------------------------------------------------------");
 
@@ -844,7 +844,7 @@ contract IntegrationTest is Test {
         (uint256 sharesAfterClaim, uint256 debtAfterClaim) = royaltyBalancerGenesisWaterSamurai.userInfo(minter1);
 
         assertEq(sharesAfterClaim, 11);
-        assertEq(debtAfterClaim, 0.268604651162790690 ether);
+        assertEq(debtAfterClaim, 0.285185185185185175 ether);
         vm.stopPrank();
 
         console.log("--------------------------------------------------------------------------------------------------------");
@@ -859,7 +859,7 @@ contract IntegrationTest is Test {
         (uint256 sharesAfterClaim_, uint256 debtAfterClaim_) = royaltyBalancerGenesisWaterSamurai.userInfo(minter7);
 
         assertEq(sharesAfterClaim_, 3);
-        assertEq(debtAfterClaim_, 0.073255813953488370 ether);
+        assertEq(debtAfterClaim_, 0.077777777777777775 ether);
         vm.stopPrank();
 
         console.log("--------------------------------------------------------------------------------------------------------");
@@ -870,28 +870,28 @@ contract IntegrationTest is Test {
         console.log("------------------");    
 
         assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter1), 0 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter2), 0.268604651162790690 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter3), 0.097674418604651160 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter4), 0.195348837209302320 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter5), 0.170930232558139530 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter6), 0.268604651162790690 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter2), 0.285185185185185175 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter3), 0.103703703703703700 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter4), 0.207407407407407400 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter5), 0.181481481481481475 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter6), 0.285185185185185175 ether);
         assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter7), 0 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter8), 0.097674418604651160 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter9), 0.146511627906976740 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter10), 0.244186046511627900 ether);
-        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter11), 0.268604651162790690 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter8), 0.103703703703703700 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter9), 0.025925925925925925 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter10), 0.259259259259259250 ether);
+        assertEq(royaltyBalancerGenesisWaterSamurai.pendingReward(minter11), 0.285185185185185175 ether);
 
-        console.log("Minter1 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter1)), "(BNB)");
-        console.log("Minter2 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter2)), "(~0.268 BNB)");
-        console.log("Minter3 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter3)), "(~0.0976 BNB)");
-        console.log("Minter4 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter4)), "(~0.195 BNB)");
-        console.log("Minter5 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter5)), "(~0.170 BNB)");
-        console.log("Minter6 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter6)), "(~0.268 BNB)");
-        console.log("Minter7 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter7)), "(BNB)");
-        console.log("Minter8 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter8)), "(~0.0976 BNB)");
-        console.log("Minter9 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter9)), "(~0.146 BNB)");
-        console.log("Minter10 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter10)), "(~0.244 BNB)");
-        console.log("Minter11 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter11)), "(~0.268 BNB)");
+        console.log("Minter1 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter1)), "(0 BNB)");
+        console.log("Minter2 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter2)), "(~0.285 BNB)");
+        console.log("Minter3 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter3)), "(~0.103 BNB)");
+        console.log("Minter4 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter4)), "(~0.207 BNB)");
+        console.log("Minter5 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter5)), "(~0.181 BNB)");
+        console.log("Minter6 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter6)), "(~0.285 BNB)");
+        console.log("Minter7 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter7)), "(0 BNB)");
+        console.log("Minter8 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter8)), "(~0.103 BNB)");
+        console.log("Minter9 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter9)), "(~0.0259 BNB)");
+        console.log("Minter10 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter10)), "(~0.259 BNB)");
+        console.log("Minter11 royaly fee reward:", royaltyBalancerGenesisWaterSamurai.pendingReward(address(minter11)), "(~0.285 BNB)");
 
         console.log("--------------------------------------------------------------------------------------------------------");
 
